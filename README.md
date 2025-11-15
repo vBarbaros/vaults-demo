@@ -2,6 +2,38 @@
 
 A comprehensive demonstration project showing how to set up and integrate OpenBao (open-source HashiCorp Vault fork) for secrets management across different deployment scenarios and application frameworks.
 
+## Why OpenBao?
+
+OpenBao Vault is free from complex licensing restrictions and can be used inside an enterprise with no contracts or ongoing fees, while HashiCorp Vault's licensing now places limits on certain types of enterprise usage due to its adoption of the Business Source License (BSL).[1][2][3]
+
+### HashiCorp Vault License Details
+
+- Since August 2023, HashiCorp Vault uses the Business Source License (BSL 1.1).[4][5][6]
+- BSL allows internal and personal use within organizations, but restricts users from offering Vault as a competitive SaaS product or as part of a competitive offering versus HashiCorp.[6][7]
+- Enterprises that do not intend to compete with HashiCorp commercially (such as SaaS hosting) can generally use Vault internally for free, but the license is not OSI-approved open source, and some use cases (especially externalized services) could fall afoul of restrictions.[7]
+
+### OpenBao Vault License Details
+
+- OpenBao is a community-led fork of HashiCorp Vault, primarily created in response to the BSL shift.
+- OpenBao is licensed under the Mozilla Public License 2.0 (MPL 2.0), which is OSI-approved and truly open source.[3][1]
+- The MPL 2.0 license allows enterprise use, modification, and distribution, including commercial deployments, with none of the competitive usage restrictions found in HashiCorp's BSL.[3]
+- OpenBao is positioning itself as fully free for enterprise use, including features formerly in Vault's paid editions.[2]
+
+### Comparison Table
+
+| Feature                          | HashiCorp Vault                   | OpenBao Vault                        |
+|----------------------------------|-----------------------------------|--------------------------------------|
+| License type                     | BSL 1.1 (source-available) [4][5] | MPL 2.0 (OSI open source) [1][3]     |
+| Free for internal enterprise use | Yes, with limitations [5][7]      | Yes, unconditionally [3]             |
+| Free for SaaS/competitive use    | No [6]                            | Yes [1][3]                           |
+| Open source recognized by OSI    | No [7]                            | Yes [1][3]                           |
+| Paid enterprise features         | Yes [8][2]                        | No; all enterprise features free [2] |
+
+### Recommendation
+
+- For maximum legal safety and guaranteed open-source compliance with no fees or contracts, OpenBao Vault is the preferred choice for enterprises, especially if vendor neutrality or future-proof licensing is a concern.[1][2][3]
+- HashiCorp Vault may still be usable for internal non-SaaS usage in some enterprise settings, but licensing restrictions make it less attractive where full freedom is required.[5][6][7]
+
 ## Author
 
 **vBarbaros** (victor.barbarosh@gmail.com)
@@ -81,3 +113,14 @@ Both applications retrieve demo database credentials from OpenBao using AppRole 
 - Enable TLS in production environments
 - Implement secret rotation policies
 - Enable audit logging for compliance
+
+## References
+
+[1]: https://www.theregister.com/2023/12/08/hashicorp_openbao_fork/
+[2]: https://news.ycombinator.com/item?id=44133909
+[3]: https://infisical.com/blog/open-source-secrets-management-devops
+[4]: https://www.hashicorp.com/en/blog/hashicorp-adopts-business-source-license
+[5]: https://invgate.com/itdb/hashicorp-vault
+[6]: https://www.netnetweb.com/content/blog/hashicorp-starts-charging-for-previously-free-open-source-code
+[7]: https://www.digitalcorner-wavestone.com/2023/09/how-hashicorps-license-change-impacts-organizations/
+[8]: https://infisical.com/blog/hashicorp-vault-pricing
