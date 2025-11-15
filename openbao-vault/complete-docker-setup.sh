@@ -169,6 +169,28 @@ echo "   🗑️  Removing old configuration and key files..."
 rm -rf ./vault-data
 rm -f .vault-keys.json .app-credentials db-policy.hcl vault-config.hcl
 echo "   ✅ Old data cleaned up"
+
+echo "   🔒 Ensuring .gitignore exists to protect secrets..."
+if [ ! -f .gitignore ]; then
+    cat > .gitignore << 'EOF'
+# OpenBao Secret Files - NEVER commit these!
+.vault-keys.json
+.app-credentials
+vault-data/
+*.pem
+*.key
+*.crt
+vault-config.hcl
+*-policy.hcl
+*.tmp
+*.log
+vault.log
+vault.pid
+EOF
+    echo "   ✅ .gitignore created to protect secret files"
+else
+    echo "   ✅ .gitignore already exists"
+fi
 echo ""
 echo "INFO: Previous configuration files and data have been removed."
 echo "REASON: Fresh files ensure no configuration conflicts or stale security credentials."
@@ -515,6 +537,7 @@ echo "⚠️  SECURITY REMINDER:"
 echo "   This is a DEMO setup with HTTP (HyperText Transfer Protocol) and relaxed security."
 echo "   For production, enable TLS (Transport Layer Security), use proper authentication,"
 echo "   and secure your unseal keys properly!"
+echo "   🔒 IMPORTANT: Secret files are protected by .gitignore - NEVER commit them to version control!"
 echo ""
 echo "INFO: Security reminder highlights the difference between demo and production setups."
 echo "REASON: Understanding security implications prevents unsafe practices in real deployments."
