@@ -181,8 +181,23 @@ cd ../openbao-vault
 
 **2. "Port 8080 already in use" error:**
 ```bash
-# Solution: Kill process using port 8080
+# Quick solution: Kill process using port 8080
 lsof -ti:8080 | xargs kill -9
+
+# For any specific port (replace 8080 with your port)
+lsof -ti:3000 | xargs kill -9   # Kill process on port 3000
+lsof -ti:5000 | xargs kill -9   # Kill process on port 5000
+
+# Safe version (asks before killing)
+lsof -ti:8080 | xargs -p kill -9
+
+# Step by step approach
+lsof -i :8080                   # Find process using port
+kill -9 <PID>                   # Kill specific process ID
+
+# Alternative: Change port in application.yml
+server:
+  port: 8081                    # Use different port
 ```
 
 **3. "Gradle not found" error:**
@@ -198,7 +213,118 @@ brew install gradle
 gradle clean build
 ```
 
-## Verification
+## Port Management
+
+### Kill Process on Specific Port
+When you encounter "Port already in use" errors, use these commands:
+
+```bash
+# Quick kill (most common)
+lsof -ti:8080 | xargs kill -9
+
+# For any port (replace with your port number)
+lsof -ti:3000 | xargs kill -9   # Port 3000
+lsof -ti:5000 | xargs kill -9   # Port 5000
+lsof -ti:8080 | xargs kill -9   # Port 8080
+lsof -ti:9000 | xargs kill -9   # Port 9000
+```
+
+### Safe Process Killing
+```bash
+# Ask before killing (safer)
+lsof -ti:8080 | xargs -p kill -9
+
+# Step by step approach
+lsof -i :8080                   # 1. Find what's using the port
+kill -9 <PID>                   # 2. Kill specific process ID
+```
+
+### Alternative Port Configuration
+```yaml
+# Change port in application.yml
+server:
+  port: 8081                    # Use port 8081 instead of 8080
+```
+
+### Check What's Using a Port
+```bash
+# See detailed information about port usage
+lsof -i :8080
+
+# Example output:
+# COMMAND   PID   USER   FD   TYPE   DEVICE SIZE/OFF NODE NAME
+# java    12345  user   123u  IPv6  0x1234      0t0  TCP *:8080 (LISTEN)
+```
+
+## Credential Configuration Options
+
+The Spring Boot application supports multiple ways to provide OpenBao AppRole credentials:
+
+### Option 1: Environment Variables (Current Default)
+```bash
+# Automatically set by run.sh script
+export ROLE_ID=$SPRINGBOOT_ROLE_ID
+export SECRET_ID=$SPRINGBOOT_SECRET_ID
+
+# Used in Java code
+String roleId = System.getenv("ROLE_ID");
+String secretId = System.getenv("SECRET_ID");
+```
+
+### Option 2: application.yml with Environment Placeholders
+```yaml
+# src/main/resources/application.yml
+openbao:
+  url: http://127.0.0.1:8200
+  role-id: ${ROLE_ID:}        # Gets from environment variable
+  secret-id: ${SECRET_ID:}    # Gets from environment variable
+```
+
+### Option 3: Direct Values in application.yml
+```yaml
+# application.yml - NOT RECOMMENDED for production
+openbao:
+  url: http://127.0.0.1:8200
+  role-id: "your-actual-role-id"
+  secret-id: "your-actual-secret-id"
+```
+
+### Configuration Class Usage
+The application includes an `OpenBaoConfig` class that reads from application.yml:
+
+```java
+@Component
+@ConfigurationProperties(prefix = "openbao")
+public class OpenBaoConfig {
+    private String url;
+    private String roleId;
+    private String secretId;
+    // getters and setters...
+}
+```
+
+### Fallback Mechanism
+The application uses a fallback approach:
+1. **First**: Try to get credentials from `OpenBaoConfig` (application.yml)
+2. **Fallback**: Use environment variables if config is empty
+3. **Error**: Return error if neither source provides credentials
+
+### Testing Configuration
+Use the `/config` endpoint to check current configuration:
+```bash
+curl http://localhost:8080/config
+```
+
+**Response:**
+```json
+{
+  "vault_url": "http://127.0.0.1:8200",
+  "role_id_configured": true,
+  "secret_id_configured": true,
+  "env_role_id": "present",
+  "env_secret_id": "present"
+}
+```
 
 ### Test Spring Boot AppRole Authentication
 ```bash

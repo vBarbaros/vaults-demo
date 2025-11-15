@@ -1,5 +1,6 @@
 package com.demo;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -16,6 +17,9 @@ public class DemoController {
     
     private final RestTemplate restTemplate = new RestTemplate();
     
+    @Autowired
+    private OpenBaoConfig openBaoConfig;
+    
     @GetMapping("/")
     public Map<String, String> home() {
         Map<String, String> response = new HashMap<>();
@@ -27,13 +31,27 @@ public class DemoController {
     @GetMapping("/db-credentials")
     public Map<String, Object> getDbCredentials() {
         try {
-            // Get AppRole credentials from environment
-            String roleId = System.getenv("ROLE_ID");
-            String secretId = System.getenv("SECRET_ID");
+            // Get AppRole credentials from configuration
+            String roleId = openBaoConfig.getRoleId();
+            String secretId = openBaoConfig.getSecretId();
+            String vaultUrl = openBaoConfig.getUrl();
+            
+            // Fallback to environment variables if not in config
+            if (roleId == null || roleId.isEmpty()) {
+                roleId = System.getenv("ROLE_ID");
+            }
+            if (secretId == null || secretId.isEmpty()) {
+                secretId = System.getenv("SECRET_ID");
+            }
+            if (vaultUrl == null || vaultUrl.isEmpty()) {
+                vaultUrl = "http://127.0.0.1:8200";
+            }
             
             if (roleId == null || secretId == null) {
                 Map<String, Object> error = new HashMap<>();
-                error.put("error", "AppRole credentials not found in environment");
+                error.put("error", "AppRole credentials not found in configuration or environment");
+                error.put("config_role_id", openBaoConfig.getRoleId());
+                error.put("env_role_id", System.getenv("ROLE_ID") != null ? "present" : "missing");
                 return error;
             }
             
@@ -44,7 +62,7 @@ public class DemoController {
             HttpEntity<String> authRequest = new HttpEntity<>(authPayload, headers);
             
             ResponseEntity<Map> authResponse = restTemplate.postForEntity(
-                "http://127.0.0.1:8200/v1/auth/approle/login", authRequest, Map.class);
+                vaultUrl + "/v1/auth/approle/login", authRequest, Map.class);
             
             if (authResponse.getBody() == null || authResponse.getBody().get("auth") == null) {
                 Map<String, Object> error = new HashMap<>();
@@ -62,7 +80,7 @@ public class DemoController {
             HttpEntity<String> secretRequest = new HttpEntity<>(secretHeaders);
             
             ResponseEntity<Map> secretResponse = restTemplate.exchange(
-                "http://127.0.0.1:8200/v1/secret/data/database/demo",
+                vaultUrl + "/v1/secret/data/database/demo",
                 org.springframework.http.HttpMethod.GET,
                 secretRequest,
                 Map.class);
@@ -91,5 +109,16 @@ public class DemoController {
         Map<String, String> response = new HashMap<>();
         response.put("status", "healthy");
         return response;
+    }
+    
+    @GetMapping("/config")
+    public Map<String, Object> showConfig() {
+        Map<String, Object> config = new HashMap<>();
+        config.put("vault_url", openBaoConfig.getUrl());
+        config.put("role_id_configured", openBaoConfig.getRoleId() != null && !openBaoConfig.getRoleId().isEmpty());
+        config.put("secret_id_configured", openBaoConfig.getSecretId() != null && !openBaoConfig.getSecretId().isEmpty());
+        config.put("env_role_id", System.getenv("ROLE_ID") != null ? "present" : "missing");
+        config.put("env_secret_id", System.getenv("SECRET_ID") != null ? "present" : "missing");
+        return config;
     }
 }

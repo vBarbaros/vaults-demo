@@ -5,6 +5,12 @@ spring:
   application:
     name: vault-demo
 
+# OpenBao Configuration
+openbao:
+  url: http://127.0.0.1:8200
+  role-id: ${ROLE_ID:}
+  secret-id: ${SECRET_ID:}
+
 logging:
   level:
     org.springframework.vault: DEBUG
