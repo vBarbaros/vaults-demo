@@ -1,0 +1,10 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: vault-demo
+
+logging:
+  level:
+    org.springframework.vault: DEBUG
