@@ -75,9 +75,18 @@ This runs all setup steps automatically and provides a fully configured OpenBao 
 ./app-access-demo.sh
 ```
 **What it does:**
-- Authenticates using AppRole (Role ID + Secret ID)
+- Authenticates using Flask AppRole (Role ID + Secret ID)
 - Retrieves database credentials from OpenBao
 - Displays the retrieved username and password
+
+### Refresh Application Credentials
+```bash
+./refresh-credentials.sh
+```
+**What it does:**
+- Generates fresh Secret IDs for both Flask and Spring Boot AppRoles
+- Updates the .app-credentials file with new credentials
+- Maintains the same Role IDs but refreshes Secret IDs for security
 
 ## Access Points
 

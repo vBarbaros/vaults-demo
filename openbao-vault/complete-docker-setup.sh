@@ -350,14 +350,14 @@ echo "REASON: Proper access control is essential for production security and com
 export VAULT_TOKEN=$ROOT_TOKEN
 
 echo "   🗄️  Enabling KV (Key-Value) v2 secrets engine at path 'secret/'..."
-docker exec -e VAULT_TOKEN=$ROOT_TOKEN $CONTAINER_NAME bao secrets enable -path=secret kv-v2 2>/dev/null || true
+docker exec -e VAULT_ADDR=http://127.0.0.1:8200 -e VAULT_TOKEN=$ROOT_TOKEN $CONTAINER_NAME bao secrets enable -path=secret kv-v2 2>/dev/null || true
 echo "   ✅ Key-Value store enabled for storing secrets"
 echo "INFO: KV (Key-Value) v2 engine provides versioned secret storage with metadata."
 echo "REASON: Versioning allows secret rotation and rollback capabilities for operational safety."
 
 echo ""
 echo "   🎭 Enabling AppRole (Application Role) authentication method..."
-docker exec -e VAULT_TOKEN=$ROOT_TOKEN $CONTAINER_NAME bao auth enable approle 2>/dev/null || true
+docker exec -e VAULT_ADDR=http://127.0.0.1:8200 -e VAULT_TOKEN=$ROOT_TOKEN $CONTAINER_NAME bao auth enable approle 2>/dev/null || true
 echo "   ✅ AppRole auth enabled (for machine-to-machine authentication)"
 echo "INFO: AppRole (Application Role) provides secure authentication for applications and services."
 echo "REASON: Applications need non-human authentication that doesn't require interactive login."
@@ -374,14 +374,14 @@ echo "INFO: Policies define fine-grained permissions for different secret paths.
 echo "REASON: Least-privilege access ensures applications only access secrets they need."
 
 docker cp db-policy.hcl $CONTAINER_NAME:/tmp/db-policy.hcl
-docker exec -e VAULT_TOKEN=$ROOT_TOKEN $CONTAINER_NAME bao policy write db-policy /tmp/db-policy.hcl 2>/dev/null || true
+docker exec -e VAULT_ADDR=http://127.0.0.1:8200 -e VAULT_TOKEN=$ROOT_TOKEN $CONTAINER_NAME bao policy write db-policy /tmp/db-policy.hcl 2>/dev/null || true
 echo "   ✅ Policy 'db-policy' uploaded to OpenBao"
 echo "INFO: Policy is now active and can be assigned to authentication roles."
 echo "REASON: Uploaded policies enable enforcement of access controls for applications."
 
 echo ""
 echo "   🤖 Creating AppRole (Application Role) 'flask-app-role' for Flask applications..."
-docker exec -e VAULT_TOKEN=$ROOT_TOKEN $CONTAINER_NAME bao write auth/approle/role/flask-app-role \
+docker exec -e VAULT_ADDR=http://127.0.0.1:8200 -e VAULT_TOKEN=$ROOT_TOKEN $CONTAINER_NAME bao write auth/approle/role/flask-app-role \
   token_policies="db-policy" \
   token_ttl=1h \
   token_max_ttl=4h 2>/dev/null || true
@@ -389,7 +389,7 @@ echo "   ✅ Flask AppRole created with 1h token TTL (Time To Live) and 4h max T
 
 echo ""
 echo "   🤖 Creating AppRole (Application Role) 'springboot-app-role' for Spring Boot applications..."
-docker exec -e VAULT_TOKEN=$ROOT_TOKEN $CONTAINER_NAME bao write auth/approle/role/springboot-app-role \
+docker exec -e VAULT_ADDR=http://127.0.0.1:8200 -e VAULT_TOKEN=$ROOT_TOKEN $CONTAINER_NAME bao write auth/approle/role/springboot-app-role \
   token_policies="db-policy" \
   token_ttl=1h \
   token_max_ttl=4h 2>/dev/null || true
@@ -399,13 +399,13 @@ echo "REASON: Role separation enables fine-grained access control and audit trai
 
 echo ""
 echo "   🎫 Generating Flask application credentials..."
-FLASK_ROLE_ID=$(docker exec -e VAULT_TOKEN=$ROOT_TOKEN $CONTAINER_NAME bao read -field=role_id auth/approle/role/flask-app-role/role-id 2>/dev/null || echo "")
-FLASK_SECRET_ID=$(docker exec -e VAULT_TOKEN=$ROOT_TOKEN $CONTAINER_NAME bao write -field=secret_id -f auth/approle/role/flask-app-role/secret-id 2>/dev/null || echo "")
+FLASK_ROLE_ID=$(docker exec -e VAULT_ADDR=http://127.0.0.1:8200 -e VAULT_TOKEN=$ROOT_TOKEN $CONTAINER_NAME bao read -field=role_id auth/approle/role/flask-app-role/role-id 2>/dev/null || echo "")
+FLASK_SECRET_ID=$(docker exec -e VAULT_ADDR=http://127.0.0.1:8200 -e VAULT_TOKEN=$ROOT_TOKEN $CONTAINER_NAME bao write -field=secret_id -f auth/approle/role/flask-app-role/secret-id 2>/dev/null || echo "")
 
 echo ""
 echo "   🎫 Generating Spring Boot application credentials..."
-SPRINGBOOT_ROLE_ID=$(docker exec -e VAULT_TOKEN=$ROOT_TOKEN $CONTAINER_NAME bao read -field=role_id auth/approle/role/springboot-app-role/role-id 2>/dev/null || echo "")
-SPRINGBOOT_SECRET_ID=$(docker exec -e VAULT_TOKEN=$ROOT_TOKEN $CONTAINER_NAME bao write -field=secret_id -f auth/approle/role/springboot-app-role/secret-id 2>/dev/null || echo "")
+SPRINGBOOT_ROLE_ID=$(docker exec -e VAULT_ADDR=http://127.0.0.1:8200 -e VAULT_TOKEN=$ROOT_TOKEN $CONTAINER_NAME bao read -field=role_id auth/approle/role/springboot-app-role/role-id 2>/dev/null || echo "")
+SPRINGBOOT_SECRET_ID=$(docker exec -e VAULT_ADDR=http://127.0.0.1:8200 -e VAULT_TOKEN=$ROOT_TOKEN $CONTAINER_NAME bao write -field=secret_id -f auth/approle/role/springboot-app-role/secret-id 2>/dev/null || echo "")
 
 if [ ! -z "$FLASK_ROLE_ID" ] && [ ! -z "$FLASK_SECRET_ID" ] && [ ! -z "$SPRINGBOOT_ROLE_ID" ] && [ ! -z "$SPRINGBOOT_SECRET_ID" ]; then
     cat > .app-credentials << EOF
@@ -416,10 +416,6 @@ FLASK_SECRET_ID=$FLASK_SECRET_ID
 # Spring Boot Application Credentials
 SPRINGBOOT_ROLE_ID=$SPRINGBOOT_ROLE_ID
 SPRINGBOOT_SECRET_ID=$SPRINGBOOT_SECRET_ID
-
-# Legacy credentials (for backward compatibility)
-ROLE_ID=$FLASK_ROLE_ID
-SECRET_ID=$FLASK_SECRET_ID
 EOF
     echo "   ✅ Application credentials saved to '.app-credentials'"
     echo "      Flask Role ID (Identifier): ${FLASK_ROLE_ID:0:8}... (public identifier)"
@@ -456,13 +452,66 @@ echo "      Password: demo_db_pwd"
 echo "INFO: Secrets are stored in the KV (Key-Value) engine under organized paths."
 echo "REASON: Structured paths enable logical organization and policy-based access control."
 
-docker exec -e VAULT_TOKEN=$ROOT_TOKEN $CONTAINER_NAME bao kv put secret/database/demo \
+docker exec -e VAULT_ADDR=http://127.0.0.1:8200 -e VAULT_TOKEN=$ROOT_TOKEN $CONTAINER_NAME bao kv put secret/database/demo \
   username="demo_db_user" \
   password="demo_db_pwd" 2>/dev/null || true
 
 echo "   ✅ Demo secrets stored successfully!"
 echo "INFO: Secrets are now encrypted and stored in OpenBao's secure storage."
 echo "REASON: Encrypted storage protects sensitive data even if the underlying storage is compromised."
+
+# Step 5: Refresh Credentials
+echo ""
+read -p "🔄 Ready to refresh application credentials? (y/n): " -n 1 -r
+echo
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo "Credentials refresh cancelled by user."
+    exit 0
+fi
+
+echo ""
+echo "🔄 STEP 5: REFRESHING APPLICATION CREDENTIALS"
+echo "----------------------------------------"
+echo "Generating fresh credentials for applications..."
+echo "INFO: Fresh credentials ensure applications have current access tokens."
+echo "REASON: Regular credential refresh is a security best practice for production systems."
+
+echo ""
+echo "   🎫 Generating fresh Flask application credentials..."
+FLASK_ROLE_ID=$(docker exec -e VAULT_TOKEN=$ROOT_TOKEN $CONTAINER_NAME bao read -field=role_id auth/approle/role/flask-app-role/role-id 2>/dev/null || echo "")
+FLASK_SECRET_ID=$(docker exec -e VAULT_TOKEN=$ROOT_TOKEN $CONTAINER_NAME bao write -field=secret_id -f auth/approle/role/flask-app-role/secret-id 2>/dev/null || echo "")
+
+echo ""
+echo "   🎫 Generating fresh Spring Boot application credentials..."
+SPRINGBOOT_ROLE_ID=$(docker exec -e VAULT_TOKEN=$ROOT_TOKEN $CONTAINER_NAME bao read -field=role_id auth/approle/role/springboot-app-role/role-id 2>/dev/null || echo "")
+SPRINGBOOT_SECRET_ID=$(docker exec -e VAULT_TOKEN=$ROOT_TOKEN $CONTAINER_NAME bao write -field=secret_id -f auth/approle/role/springboot-app-role/secret-id 2>/dev/null || echo "")
+
+if [ ! -z "$FLASK_ROLE_ID" ] && [ ! -z "$FLASK_SECRET_ID" ] && [ ! -z "$SPRINGBOOT_ROLE_ID" ] && [ ! -z "$SPRINGBOOT_SECRET_ID" ]; then
+    # Remove old credentials file
+    rm -f .app-credentials
+    
+    # Create fresh credentials file
+    cat > .app-credentials << EOF
+# Flask Application Credentials
+FLASK_ROLE_ID=$FLASK_ROLE_ID
+FLASK_SECRET_ID=$FLASK_SECRET_ID
+
+# Spring Boot Application Credentials
+SPRINGBOOT_ROLE_ID=$SPRINGBOOT_ROLE_ID
+SPRINGBOOT_SECRET_ID=$SPRINGBOOT_SECRET_ID
+EOF
+    echo "   ✅ Fresh application credentials saved to '.app-credentials'"
+    echo "      Flask Role ID (Identifier): ${FLASK_ROLE_ID:0:8}... (public identifier)"
+    echo "      Flask Secret ID (Identifier): ${FLASK_SECRET_ID:0:8}... (private credential)"
+    echo "      Spring Boot Role ID (Identifier): ${SPRINGBOOT_ROLE_ID:0:8}... (public identifier)"
+    echo "      Spring Boot Secret ID (Identifier): ${SPRINGBOOT_SECRET_ID:0:8}... (private credential)"
+    echo "INFO: Fresh Role IDs (Identifiers) and Secret IDs (Identifiers) provide current authentication to OpenBao."
+    echo "REASON: New credentials ensure applications have valid, unexpired access tokens."
+else
+    echo "   ⚠️  Warning: Could not generate fresh application credentials"
+    echo "INFO: Credential generation failed - manual configuration may be needed."
+    echo "REASON: Applications won't be able to authenticate without valid Role ID and Secret ID pairs."
+fi
 
 # Final Summary
 echo ""
