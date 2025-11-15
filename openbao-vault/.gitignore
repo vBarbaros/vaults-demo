@@ -1,0 +1,19 @@
+# OpenBao Secret Files - NEVER commit these!
+.vault-keys.json
+.app-credentials
+vault-data/
+*.pem
+*.key
+*.crt
+
+# OpenBao Configuration with sensitive data
+vault-config.hcl
+
+# Policy files (may contain sensitive paths)
+*-policy.hcl
+
+# Temporary files
+*.tmp
+*.log
+vault.log
+vault.pid
