@@ -14,8 +14,8 @@ This repository contains:
   - Docker container deployment (isolated, portable)
   - System service deployment (native performance)
 - **SPRING_BOOT_DEMO.md** - Spring Boot application integration with OpenBao
-- **FLASK_DEMO.md** - Flask application integration with OpenBao
 - **flask-app/** - Working Flask application with OpenBao integration
+  - **FLASK_DEMO.md** - Flask integration guide and documentation
 - **spring-boot-app/** - Working Spring Boot application with OpenBao integration
 
 ## What This Demo Covers
@@ -36,7 +36,7 @@ This repository contains:
 
 2. **Application integration:**
    - Java/Spring Boot: See `SPRING_BOOT_DEMO.md`
-   - Python/Flask: See `FLASK_DEMO.md`
+   - Python/Flask: See `flask-app/FLASK_DEMO.md`
 
 3. **Demo secrets:**
    - Username: `demo_db_user`

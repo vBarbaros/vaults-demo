@@ -88,6 +88,63 @@ This runs all setup steps automatically and provides a fully configured OpenBao 
 - Updates the .app-credentials file with new credentials
 - Maintains the same Role IDs but refreshes Secret IDs for security
 
+### Update Database Credentials
+```bash
+./update-credentials.sh
+```
+**What it does:**
+- Reads database credentials from `db-credentials-in-use.json`
+- Updates the credentials in OpenBao at `secret/database/demo`
+- Updates timestamp in the JSON file
+- Verifies the update was successful
+
+## Database Credential Management
+
+### Credential File Format
+The `db-credentials-in-use.json` file contains the database credentials:
+```json
+{
+  "username": "demo_db_user",
+  "password": "demo_db_pwd", 
+  "description": "Demo database credentials for OpenBao integration testing",
+  "last_updated": "2025-11-15T14:10:00Z"
+}
+```
+
+### Updating Database Credentials
+
+**Step 1: Edit the JSON file**
+```bash
+# Edit db-credentials-in-use.json with new credentials
+{
+  "username": "new_db_user",
+  "password": "new_secure_password",
+  "description": "Updated database credentials",
+  "last_updated": "2025-11-15T14:10:00Z"
+}
+```
+
+**Step 2: Update OpenBao**
+```bash
+./update-credentials.sh
+```
+
+**Step 3: Verify applications receive new credentials**
+```bash
+# Test Flask app
+curl http://localhost:5000/db-credentials
+
+# Test Spring Boot app  
+curl http://localhost:8080/db-credentials
+```
+
+### Credential Rotation Workflow
+
+1. **Update JSON file** with new database credentials
+2. **Run update script** to push changes to OpenBao
+3. **Applications automatically** receive new credentials on next API call
+4. **No application restart** required - credentials are fetched dynamically
+
 ## Access Points
 
 - **OpenBao UI:** http://127.0.0.1:8200
@@ -111,7 +168,8 @@ curl http://localhost:8080/db-credentials
 ## Files Created
 
 - `.vault-keys.json` - Unseal keys and root token (keep secure!)
-- `.app-credentials` - AppRole credentials for applications
+- `.app-credentials` - AppRole credentials for Flask and Spring Boot applications
+- `db-credentials-in-use.json` - Database credentials loaded into OpenBao
 - `vault-data/` - Persistent OpenBao data directory
 - `vault-config.hcl` - OpenBao configuration
 - `db-policy.hcl` - Database access policy

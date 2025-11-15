@@ -1,6 +1,7 @@
 # OpenBao Secret Files - NEVER commit these!
 .vault-keys.json
 .app-credentials
+db-credentials-in-use.json
 vault-data/
 *.pem
 *.key

@@ -446,15 +446,33 @@ echo "Adding sample database credentials for testing..."
 echo "INFO: Demo secrets provide realistic data for testing application integration."
 echo "REASON: Sample data helps verify the complete workflow from storage to retrieval."
 
-echo "   📝 Storing demo database credentials at 'secret/database/demo'..."
-echo "      Username: demo_db_user"
-echo "      Password: demo_db_pwd"
-echo "INFO: Secrets are stored in the KV (Key-Value) engine under organized paths."
-echo "REASON: Structured paths enable logical organization and policy-based access control."
+echo "   📝 Storing database credentials from 'db-credentials-in-use.json'..."
+
+# Check if credentials file exists
+if [ ! -f "db-credentials-in-use.json" ]; then
+    echo "   ⚠️  Creating default db-credentials-in-use.json file..."
+    cat > db-credentials-in-use.json << EOF
+{
+  "username": "demo_db_user",
+  "password": "demo_db_pwd",
+  "description": "Demo database credentials for OpenBao integration testing",
+  "last_updated": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+}
+EOF
+fi
+
+# Extract credentials from JSON file
+DB_USERNAME=$(jq -r '.username' db-credentials-in-use.json)
+DB_PASSWORD=$(jq -r '.password' db-credentials-in-use.json)
+
+echo "      Username: $DB_USERNAME"
+echo "      Password: ${DB_PASSWORD:0:3}... (truncated for security)"
+echo "INFO: Database credentials are loaded from 'db-credentials-in-use.json' file."
+echo "REASON: Using a JSON file allows easy credential updates without modifying scripts."
 
 docker exec -e VAULT_ADDR=http://127.0.0.1:8200 -e VAULT_TOKEN=$ROOT_TOKEN $CONTAINER_NAME bao kv put secret/database/demo \
-  username="demo_db_user" \
-  password="demo_db_pwd" 2>/dev/null || true
+  username="$DB_USERNAME" \
+  password="$DB_PASSWORD" 2>/dev/null || true
 
 echo "   ✅ Demo secrets stored successfully!"
 echo "INFO: Secrets are now encrypted and stored in OpenBao's secure storage."

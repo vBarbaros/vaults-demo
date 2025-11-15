@@ -1,0 +1,10 @@
+#!/bin/sh
+
+# Gradle wrapper script - simplified version
+if command -v gradle &> /dev/null; then
+    gradle "$@"
+else
+    echo "Gradle not found. Please install Gradle:"
+    echo "  brew install gradle"
+    exit 1
+fi
